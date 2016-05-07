@@ -17,6 +17,15 @@ namespace BTHJAC013{
 		int sampleRate;
 		double duration;
 	public:
+		// Constructor for testing. Again, another very clever suggestion from someone in the lab...who's name I can't remember
+		//Essentially this constructor will be used to quickly construct an know audio (esures that if the file reading messes up
+		//we have an alt way of checking if everything else is working.
+		Audio(std::vector<T> & data, int sampleRate) {
+			this->tSize = (int) sizeof(T);
+			this->sampleRate = sampleRate;
+			audioData = data;
+		}
+	
 		//Constructor
 		Audio (std::string inFile, int sampleRate){
 			this->sampleRate = sampleRate;
@@ -228,6 +237,16 @@ namespace BTHJAC013{
 		int sampleRate;
 		double duration;
 	public:
+		// Constructor for testing. Again, another very clever suggestion from someone in the lab...who's name I can't remember
+		//Essentially this constructor will be used to quickly construct an know audio (esures that if the file reading messes up
+		//we have an alt way of checking if everything else is working.
+		Audio(std::vector<std::pair<T, T>> & data, int sampleRate) {
+			this->tSize = (int) sizeof(T);
+			this->sampleRate = sampleRate;
+			audioData = data;
+		}
+	
+		//Constructor
 		Audio(std::string fileName, int sampleRate) {
 			readInFromFile(fileName);
 			this->sampleRate = sampleRate;
