@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <iostream>
+#include <algorithm>
 
 namespace BTHJAC013{
 	template <typename T, int numChannels> class Audio {
@@ -94,7 +96,7 @@ namespace BTHJAC013{
 			
 			//Step through audioData and excl. data from the cutOutSegment
 			for (int i = 0; i < audioData.size(); i++){
-				if ((i < cutOutTimeSegment) || (i > cutOutSegment)){
+				if ((i < cutOutTimeSegment.first) || (i > cutOutTimeSegment.second)){
 					resultingAudioSample.push_back(audioData[i]);
 				}
 			}
@@ -118,7 +120,7 @@ namespace BTHJAC013{
 				infile.seekg (0, infile.beg);
 				
 				//Calculate the numbers of samples that will be found in the file
-				int numberOfSamples = (int) (length / (tSize * numChannels));
+				int numberOfSamples = (int) (fileLength / (tSize * numChannels));
 				
 				//calculate duration of the file
 				duration = numberOfSamples/(float)sampleRate;
@@ -133,7 +135,7 @@ namespace BTHJAC013{
 				}
 				
 			}else{
-				std::cout << "Could not open file." << std::cout;
+				std::cout << "Could not open file." << std::endl;
 			}
 			infile.close();
 		}
@@ -141,7 +143,7 @@ namespace BTHJAC013{
 		//Write to file	(Mono)
 		void writeToFile (std::string outFileName){
 			//File name as stated in brief
-			std::string fileName = file + "_" + std::to_string(sampleRate) + "_" + std::to_string(tSize * 8) + "_mono.raw";
+			std::string fileName = outFileName + "_" + std::to_string(sampleRate) + "_" + std::to_string(tSize * 8) + "_mono.raw";
 			
 			std::ofstream outfile(fileName, std::ios::binary | std::ios::out);
 			
@@ -157,9 +159,9 @@ namespace BTHJAC013{
 		//Clamp sample Max. Adding two very loud files together may result in saturation.
 		T clampSampleMax(T audioSample){
 			if (tSize == 1){
-				return (sample > INT8_MAX) ? INT8_MAX : sample; 
+				return (audioSample > INT8_MAX) ? INT8_MAX : audioSample; 
 			}else{
-				return (sample > INT16_MAX) ? INT16_MAX : sample;
+				return (audioSample > INT16_MAX) ? INT16_MAX : audioSample;
 			}
 		}
 		
@@ -179,7 +181,7 @@ namespace BTHJAC013{
 			//Copies audio data from start of the range to the end range into the new resulting audio sample 
 			std::copy(audioData.begin() + rangeStart, audioData.begin() + rangeEnd, resultingAudioSampleObject->audioData.begin());
 			
-			return *resultingAudioSampleObjectl;
+			return *resultingAudioSampleObject;
 		}
 		
 		//returns the audio data within this object
