@@ -70,43 +70,7 @@ namespace BTHJAC013{
 			return *this;
 		}
 		
-		//Pipe operator. Implements concatination
-		Audio &operator|(const Audio * rhs){
-			audioData.insert(audioData.end(), rhs.audioData.begin(), rhs.audioData.end());
-			return *this;
-		}
 		
-		//* operator. Multiplies L&R channel with number as given (Think of is as audio panning)
-		Audio &operator*(const std::pair <float, float> & volumeChange){
-			for (int i = 0; i < audioData.size(); i++){	//Step through of all audio data
-				audioData[i] *= volumeChange.first; 	//Seeing as this is only mono....only one channel data is needed
-			}
-			return *this;
-		}
-		
-		//+ Operator. Adds 2 audio samples of same size (same tSize and #Samples)
-		Audio &operator+(const Audio & rhs){
-			for (int i = 0; i < audioData.size(); i++){	//Step through all the audio data
-				audioData[i] = clampSampleMax(audioData[i] + rhs.audioData[i]);
-			}
-		}
-		
-		//^ Operator. Cut segment from audio sample.
-		Audio &operator^(const std::pair<int,int> & cutOutTimeSegment){
-			std::vector<T> resultingAudioSample;
-			
-			//Step through audioData and excl. data from the cutOutSegment
-			for (int i = 0; i < audioData.size(); i++){
-				if ((i < cutOutTimeSegment.first) || (i > cutOutTimeSegment.second)){
-					resultingAudioSample.push_back(audioData[i]);
-				}
-			}
-			
-			//set current AudioData to new resulting data
-			audioData = resultingAudioSample;
-			
-			return *this;
-		}
 		
 		//Other fuctions
 		//******************************************************************************
@@ -244,6 +208,26 @@ namespace BTHJAC013{
 		
 		//Move Constructor
 		Audio (Audio && rhs){
+			this->audioData = std::move(rhs.audioData);
+			this->sampleRate = rhs.sampleRate;
+			this->tSize = rhs.tSize;
+			this->duration = rhs.duration;
+			
+			return *this;
+		}
+		
+		
+		//Operators
+		//***********************************************************************
+		//Copy assign operator
+		Audio &operator=(const Audio & rhs){
+			Audio<T, 2> tempAudio(rhs);
+			*this = std::move(tempAudio);
+			return *this;
+		}
+		
+		//Move assign operator
+		Audio &operator=(Audio && rhs){
 			//Aquire
 			this->audioData = std::move(rhs.audioData);
 			this->tSize = rhs.tSize;
@@ -258,9 +242,51 @@ namespace BTHJAC013{
 			return *this;
 		}
 		
+		//Pipe operator. Implements concatination
+		Audio &operator|(const Audio * rhs){
+			audioData.insert(audioData.end(), rhs.audioData.begin(), rhs.audioData.end());
+			return *this;
+		}
+		
+		//* operator. Multiplies L&R channel with number as given (Think of is as audio panning)
+		Audio &operator*(const std::pair <float, float> & volumeChange){
+			for (int i = 0; i < audioData.size(); i++){	//Step through of all audio data
+				audioData[i] = std::make_pair(audioData[i].first * volumeChange.first, audioData[i].second * volumeChange.second);
+			}
+			return *this;
+		}
+		
+		//+ Operator. Adds 2 audio samples of same size (same tSize and #Samples)
+		Audio &operator+(const Audio & rhs){
+			for (int i = 0; i < audioData.size(); i++){	//Step through all the audio data
+				T leftClamp = clampSampleMax(audioData[i].first + rhs.audioData[i].first);
+				T rightClamp = clampSampleMax(audioData[i].second + rhs.audioData[i].second);
+
+				audioData[i] = std::make_pair(leftClamp, rightClamp);
+			}
+		}
+		
+		//^ Operator. Cut segment from audio sample.
+		Audio &operator^(const std::pair<int,int> & cutOutTimeSegment){
+			std::vector<std::pair<T, T>> resultingAudioSample;
+			
+			//Step through audioData and excl. data from the cutOutSegment
+			for (int i = 0; i < audioData.size(); i++){
+				if ((i < cutOutTimeSegment.first) || (i > cutOutTimeSegment.second)){
+					resultingAudioSample.push_back(audioData[i]);
+				}
+			}
+			
+			//set current AudioData to new resulting data
+			audioData = resultingAudioSample;
+			
+			return *this;
+		}
+		
+		
 		//Functions
 		//************************************************************************
-		//Read in file data from specified file (Handles the mono)
+		//Read in file data from specified file (Handles the Stereo)
 		void readInFromFile (std::string inFileName){
 			std::ifstream infile(inFileName);
 			
@@ -293,7 +319,7 @@ namespace BTHJAC013{
 			infile.close();
 		}
 		
-		//Write to file	(Mono)
+		//Write to file	(Stereo)
 		void writeToFile (std::string outFileName){
 			//File name as stated in brief
 			std::string fileName = outFileName + "_" + std::to_string(sampleRate) + "_" + std::to_string(tSize * 8) + "_mono.raw";
@@ -311,6 +337,73 @@ namespace BTHJAC013{
 			}
 			outfile.close();
 		}
+		
+		//Clamp sample Max. Adding two very loud files together may result in saturation.
+		T clampSampleMax(T audioSample){
+			if (tSize == 1){
+				return (audioSample > INT8_MAX) ? INT8_MAX : audioSample; 
+			}else{
+				return (audioSample > INT16_MAX) ? INT16_MAX : audioSample;
+			}
+		}
+		
+		//reverses audio data (essentially just rewrites the data back to front). Again...a funtion I was writing from scratc...untill someone pointed out it already exists
+		void reverse(){
+			std::reverse(audioData.begin(), audioData.end());
+		}
+		
+		//Select and return a specified segment of the audioData
+		Audio & selectRange(int rangeStart, int rangeEnd){
+			Audio<T,2> * resultingAudioSampleObject = new Audio(*this);	//essentially make a duplicate of the current audio file
+			
+			resultingAudioSampleObject->audioData.clear();		//Clear out data stored within object
+			resultingAudioSampleObject->audioData.resize((unsigned long)(rangeEnd-rangeStart));	//Resize audioData to new range
+			
+			//was trying nested for loops and a ton of if statements....turns out...c++ has a convenient copy funct. Nice
+			//Copies audio data from start of the range to the end range into the new resulting audio sample 
+			std::copy(audioData.begin() + rangeStart, audioData.begin() + rangeEnd, resultingAudioSampleObject->audioData.begin());
+			
+			return *resultingAudioSampleObject;
+		}
+		
+		//returns the audio data within this object
+		std::vector <T> & getAudioData(){
+			return audioData;
+		}
+		
+		//Calculate the RMS of the audio file (could be seen as the average of the audioFile)
+		std::pair<float,float> calcRMS(){
+			std::pair<float, float> rms;
+			float audioDataSizeInverse = 1 / (float) audioData.size();
+
+			rms = std::accumulate(audioData.begin(), audioData.end(), std::pair<float, float>(0, 0),[] (std::pair<float, float> accum, std::pair<T, T> x) {
+				accum = std::make_pair(accum.first + (std::pow(x.first, 2)), accum.second + (std::pow(x.second, 2)));
+				return accum;
+			});		//Had someone explain this to me....I still dont full comprehend how this actually works.
+			rms = std::make_pair(std::sqrt(rms.first * inverseSize), std::sqrt(rms.second * inverseSize));
+			return rms;		
+		}
+		
+		//normalizes audio data to given rms value
+		Audio & normalize(float leftRMS, float rightRMS){
+			NormalFunction normalF (calcRMS(), std::make_pair(leftRMS, rightRMS);
+			Audio<T,2> * tempAudio = new Audio(*this);
+			std::transform(audioData.begin(), audioData.end(), tempAudio->audioData.begin(), normalF);
+			return * tempAudio;
+		}
+		
+		//Inner function that is used to calculate the normal values. Someone in the lab had this bright idea, can't remeber who...but kudo's to that person.
+		class NormalFunction{
+		public:
+			std::pair<float, float> currentRMS;
+			std::pair<float, float> targetRMS;
+			
+			NormalFunction(std::pair<float, float> curRMS, std::pair<float, float> tarRMS):currentRMS(curRMS), targetRMS(tarRMS){}
+			
+			std::pair<T, T> operator()(std::pair<float, float> inputAmpl){
+				return std::make_pair((T) (inputAmp.first * (desiredRms.first / currentRms.first)), (T) (inputAmp.second * (desiredRms.second / currentRms.second)));
+			}
+		};
 		
 	};
 }
