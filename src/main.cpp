@@ -149,33 +149,61 @@ one sound file)
 			
 			
 			std::string infile = argv[8+outFileExistsStep];
-			
-			if (bitCount == 8){
-				BTHJAC013::Audio<int8_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,8bit
-				std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
-			} else if (bitCount == 16){
-				BTHJAC013::Audio<int16_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,16bit
-				std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
-			} else {				//some extra resundency
-				std::cout << "Don't know how this slipped through, but only 8 and 16 bit counts are currrently supported." << std::endl;
+			if(numbberOfChannels==1){	//mono
+				if (bitCount == 8){
+					BTHJAC013::Audio<int8_t,1> sample1 (infile1, sampleRate);//Create audio Sample #1,8bit
+					std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
+				} else if (bitCount == 16){
+					BTHJAC013::Audio<int16_t,1> sample1 (infile1, sampleRate);//Create audio Sample #1,16bit
+					std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
+				} else {				//some extra resundency
+					std::cout << "Don't know how this slipped through, but only 8 and 16 bit counts are currrently supported." << std::endl;
+				}
+			}else{				//Stereo
+				if (bitCount == 8){
+					BTHJAC013::Audio<int8_t,2> sample1 (infile1, sampleRate);//Create audio Sample #1,8bit
+					std::cout << "Left RMS : " << infile << " = " << sample1.calculateRMS().first << std::endl;
+					std::cout << "Right RMS : " << infile << " = " << sample1.calculateRMS().second << std::endl;
+				} else if (bitCount == 16){
+					BTHJAC013::Audio<int16_t,2> sample1 (infile1, sampleRate);//Create audio Sample #1,16bit
+					std::cout << "Left RMS : " << infile << " = " << sample1.calculateRMS().first << std::endl;
+					std::cout << "Right RMS : " << infile << " = " << sample1.calculateRMS().second << std::endl;
+				} else {				//some extra resundency
+					std::cout << "Don't know how this slipped through, but only 8 and 16 bit counts are currrently supported." << std::endl;
+				}
 			}
 
 		
 		} else if (opType == "-norm") {	//normalize file for left/right audio (assumes one sound file only and that r1 and r2 are floating point RMS values)
+			int range1 = stoi(argv[8 + mod]);
+			int range2 = stoi(argv[9 + mod]);
+			std::string infile = argv[10 + mod];
 			
-			
-			
-			
-			
+			if (numChannels == 1) {
+				if (bitCount == 16) {
+					BTHJAC013::Audio<int16_t, 1> sample1(infile, sampleRate);
+					sample1.normalize(range1);
+					sample1.saveFwriteToFileile(outfileName);
+				} else {
+					BTHJAC013::Audio<int8_t, 1> sample1(infile, sampleRate);
+					sample1.normalize(range1);
+					sample1.writeToFile(outfileName);
+				}
+			} else {
+				if (bitCount == 16) {
+					BTHJAC013::Audio<int16_t, 2> sample1(infile, sampleRate);
+					sample1.normalize(r1, r2);
+					sample1.writeToFile(outfileName);
+				} else {
+					BTHJAC013::Audio<int8_t, 2> sample1(infile, sampleRate);
+					sample1.normalize(range1, range2);
+					sample1.writeToFile(outfileName);
+				}
+			}
 		} else if (opType == "-fadein") {	//[extra credit]
-			
-			
-			
-		
+			std::cout << "This feature is currently not supported in the trail version.\nPlease purchase the Gold premium edidtion for full access." << std::endl;
 		} else if (opType == "-fadeout") {	//[extra credit]
-			
-			
-		
+			std::cout << "This feature is currently not supported in the trail version.\nPlease purchase the Gold premium edidtion for full access." << std::endl;
 		}
 	}catch (int e) {
 		std::cout << "There is an error in the argument list" << std::endl;
