@@ -189,9 +189,35 @@ namespace BTHJAC013{
 			return audioData;
 		}
 		
+		//Calculate the RMS of the audio file (could be seen as the average of the audioFile)
+		float calcRMS(){
+			float audioDataSizeInverse = 1/((float)audioData.size());
+			float tempVal = std::sqrt(audioDataSizeInverse*std::accumalate(audioData.begin(), audioData.end(),0,[](T accum, T x) {return (accum + pow(x, 2));}));	
+			return tempVal;
+		}
 		
+		//normalizes audio data to given rms value
+		Audio & normalize(float rms){
+			NormalFunction normalF (calcRMS(), rms);
+			Audio * tempAudio = new Audio(*this);
+			std::transform(audioData.begin(), audioData.end(), tempAudio->audioData.begin(), normalF);
+			return * tempAudio;
+		}
 		
+		//Inner function that is used to calculate the normal values. Someone in the lab had this bright idea, can't remeber who...but kudo's to that person.
+		class NormalFunction{
+		publlic:
+			float currentRMS;
+			float targetRMS;
+			
+			NormalFunction(float curRMS, float tarRMS):currentRMS(curRMS), targetRMS(tarRMS){}
+			
+			T operator()(T inputAmpl){
+				return (T) (inputAmpl*(targetRMS/currentRMS));
+			}
+		};
         };
+        
+        //Now for the stereo stuffs
 }
-
 #endif

@@ -148,7 +148,17 @@ one sound file)
 		} else if (opType == "-rms") {	//Prints out the RMS of the soundfile (assumes one sound file only).
 			
 			
+			std::string infile = argv[8+outFileExistsStep];
 			
+			if (bitCount == 8){
+				BTHJAC013::Audio<int8_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,8bit
+				std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
+			} else if (bitCount == 16){
+				BTHJAC013::Audio<int16_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,16bit
+				std::cout << "RMS : " << infile << " = " << sample1.calculateRMS() << std::endl;
+			} else {				//some extra resundency
+				std::cout << "Don't know how this slipped through, but only 8 and 16 bit counts are currrently supported." << std::endl;
+			}
 
 		
 		} else if (opType == "-norm") {	//normalize file for left/right audio (assumes one sound file only and that r1 and r2 are floating point RMS values)
