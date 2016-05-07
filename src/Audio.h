@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 
 namespace BTHJAC013{
 	template <typename T, int numChannels> class Audio {
@@ -192,8 +193,7 @@ namespace BTHJAC013{
 		//Calculate the RMS of the audio file (could be seen as the average of the audioFile)
 		float calcRMS(){
 			float audioDataSizeInverse = 1/((float)audioData.size());
-			float tempVal = std::sqrt(audioDataSizeInverse*std::accumalate(audioData.begin(), audioData.end(),0,[](T accum, T x) {return (accum + pow(x, 2));}));	
-			return tempVal;
+			return std::sqrt(audioDataSizeInverse * std::accumulate(audioData.begin(), audioData.end(), 0,[] (T accum, T x) {return (accum + pow(x, 2));}));	
 		}
 		
 		//normalizes audio data to given rms value
@@ -206,7 +206,7 @@ namespace BTHJAC013{
 		
 		//Inner function that is used to calculate the normal values. Someone in the lab had this bright idea, can't remeber who...but kudo's to that person.
 		class NormalFunction{
-		publlic:
+		public:
 			float currentRMS;
 			float targetRMS;
 			
@@ -216,8 +216,102 @@ namespace BTHJAC013{
 				return (T) (inputAmpl*(targetRMS/currentRMS));
 			}
 		};
-        };
+	};
         
-        //Now for the stereo stuffs
+	//Now for the stereo stuffs
+	template <typename T> class Audio<T, 2> {
+        private:
+		std::vector<std::pair<T, T>> audioData;
+		int tSize;
+		int sampleRate;
+		double duration;
+	public:
+		Audio(std::string fileName, int sampleRate) {
+			readInFromFile(fileName);
+			this->sampleRate = sampleRate;
+			this->tSize = (int)sizeof(T);
+		}
+		
+		~Audio() = default;
+		
+		//Copy Constructor
+		Audio(const Audio & rhs){
+			this->audioData = rhs.audioData;
+			this->tSize = rhs.tSize;
+			this->sampleRate = rhs.sampleRate;
+			this->duration = rhs.duration;
+		}
+		
+		//Move Constructor
+		Audio (Audio && rhs){
+			//Aquire
+			this->audioData = std::move(rhs.audioData);
+			this->tSize = rhs.tSize;
+			this->sampleRate = rhs.sampleRate;
+			this->duration = rhs.duration;
+			
+			//release
+			rhs.tSize = 0;
+			rhs.sampleRate = 0;
+			rhs.duration = 0;
+			
+			return *this;
+		}
+		
+		//Functions
+		//************************************************************************
+		//Read in file data from specified file (Handles the mono)
+		void readInFromFile (std::string inFileName){
+			std::ifstream infile(inFileName);
+			
+			//checks if file is open (ie exists)
+			if(infile.is_open()){
+				infile.seekg (0, infile.end); 	//Sets the position of the next character to be extracted from the input stream.
+				long fileLength = infile.tellg();	//Returns the position of the current character in the input stream.
+				infile.seekg (0, infile.beg);
+				
+				//Calculate the numbers of samples that will be found in the file
+				int numberOfSamples = (int) (fileLength / (tSize * numChannels));
+				
+				//calculate duration of the file
+				duration = numberOfSamples/(float)sampleRate;
+				
+				audioData.resize((unsigned long)(numberOfSamples));	//resize data storage too fit the incoming data
+				//go through the file data and store it in data storage
+				for (int i = 0; i < audioData.size(); i++){
+					char charBuffLeft[tSize];
+					infile.read (charBuffLeft, tSize);
+					char charBuffRight[tSize];
+					infile.read (charBuffRight,tSize);
+					
+					audioData[i] = std::make_pair(*(T *)charBuffLeft, *(T *)charBuffRight);
+				}
+				
+			}else{
+				std::cout << "Could not open file." << std::endl;
+			}
+			infile.close();
+		}
+		
+		//Write to file	(Mono)
+		void writeToFile (std::string outFileName){
+			//File name as stated in brief
+			std::string fileName = outFileName + "_" + std::to_string(sampleRate) + "_" + std::to_string(tSize * 8) + "_mono.raw";
+			
+			std::ofstream outfile(fileName, std::ios::binary | std::ios::out);
+			
+			//checks if file is open (ie has been created) else, throws toys out of pram
+			if (outfile.is_open()){
+				for (auto data : audioData) {
+					outfile.write((char *)&data.first, tSize);
+					outfile.write((char *)&data.second, tSize);
+				}
+			}else{
+				std::cout << "Could not save file" << std::endl;
+			}
+			outfile.close();
+		}
+		
+	};
 }
 #endif

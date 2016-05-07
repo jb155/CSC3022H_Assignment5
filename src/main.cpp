@@ -91,11 +91,11 @@ one sound file)
 			if (bitCount == 8){
 				BTHJAC013::Audio<int8_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,8bit
 				BTHJAC013::Audio<int8_t,numberOfChannels> sample2 (infile2, sampleRate);//Create audio Sample #2,8bit
-				(sample1.extractRange(r1 * sampleRate, r2 * sampleRate) + sample2.extractRange(s1, s2)).writeToFile(outfileName);
+				(sample1.extractRange(r1 * sampleRate, r2 * sampleRate) + sample2.extractRange(s1, s2)).writeToFile(outFile);
 			} else if (bitCount == 16){
 				BTHJAC013::Audio<int16_t,numberOfChannels> sample1 (infile1, sampleRate);//Create audio Sample #1,16bit
 				BTHJAC013::Audio<int16_t,numberOfChannels> sample2 (infile2, sampleRate);//Create audio Sample #2,16bit
-				(sample1.extractRange(r1 * sampleRate, r2 * sampleRate) + sample2.extractRange(s1, s2)).writeToFile(outfileName);
+				(sample1.extractRange(r1 * sampleRate, r2 * sampleRate) + sample2.extractRange(s1, s2)).writeToFile(outFile);
 			} else {				//some extra resundency
 				std::cout << "Don't know how this slipped through, but only 8 and 16 bit counts are currrently supported." << std::endl;
 			}		
@@ -175,29 +175,29 @@ one sound file)
 
 		
 		} else if (opType == "-norm") {	//normalize file for left/right audio (assumes one sound file only and that r1 and r2 are floating point RMS values)
-			int range1 = stoi(argv[8 + mod]);
-			int range2 = stoi(argv[9 + mod]);
+			int range1 = std::stoi(argv[8 + mod]);
+			int range2 = std::stoi(argv[9 + mod]);
 			std::string infile = argv[10 + mod];
 			
 			if (numChannels == 1) {
 				if (bitCount == 16) {
 					BTHJAC013::Audio<int16_t, 1> sample1(infile, sampleRate);
 					sample1.normalize(range1);
-					sample1.saveFwriteToFileile(outfileName);
+					sample1.saveFwriteToFileile(outFile);
 				} else {
 					BTHJAC013::Audio<int8_t, 1> sample1(infile, sampleRate);
 					sample1.normalize(range1);
-					sample1.writeToFile(outfileName);
+					sample1.writeToFile(outFile);
 				}
 			} else {
 				if (bitCount == 16) {
 					BTHJAC013::Audio<int16_t, 2> sample1(infile, sampleRate);
 					sample1.normalize(r1, r2);
-					sample1.writeToFile(outfileName);
+					sample1.writeToFile(outFile);
 				} else {
 					BTHJAC013::Audio<int8_t, 2> sample1(infile, sampleRate);
 					sample1.normalize(range1, range2);
-					sample1.writeToFile(outfileName);
+					sample1.writeToFile(outFile);
 				}
 			}
 		} else if (opType == "-fadein") {	//[extra credit]
