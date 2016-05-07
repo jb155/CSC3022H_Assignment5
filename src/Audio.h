@@ -70,6 +70,44 @@ namespace BTHJAC013{
 			return *this;
 		}
 		
+		//Pipe operator. Implements concatination
+		Audio &operator|(const Audio & rhs){
+			audioData.insert(audioData.end(), rhs.audioData.begin(), rhs.audioData.end());
+			return *this;
+		}
+		
+		//* operator. Multiplies L&R channel with number as given (Think of is as audio panning)
+		Audio & operator*(const std::pair<float, float> & volumeChange){
+			for (int i = 0; i < audioData.size(); i++){	//Step through of all audio data
+				audioData[i] *= volumeChange.first;	//this is mono....so only one of the two is needed
+			}
+			return *this;
+		}
+		
+		//+ Operator. Adds 2 audio samples of same size (same tSize and #Samples)
+		Audio &operator+(const Audio & rhs){
+			for (int i = 0; i < audioData.size(); i++){	//Step through all the audio data
+				audioData[i] = clampSampleMax(audioData[i] + rhs.audioData[i]);
+			}
+		}
+		
+		//^ Operator. Cut segment from audio sample.
+		Audio &operator^(const std::pair<int,int> & cutOutTimeSegment){
+			std::vector<T> resultingAudioSample;
+			
+			//Step through audioData and excl. data from the cutOutSegment
+			for (int i = 0; i < audioData.size(); i++){
+				if ((i < cutOutTimeSegment.first) || (i > cutOutTimeSegment.second)){
+					resultingAudioSample.push_back(audioData[i]);
+				}
+			}
+			
+			//set current AudioData to new resulting data
+			audioData = resultingAudioSample;
+			
+			return *this;
+		}
+		
 		
 		
 		//Other fuctions
@@ -212,8 +250,6 @@ namespace BTHJAC013{
 			this->sampleRate = rhs.sampleRate;
 			this->tSize = rhs.tSize;
 			this->duration = rhs.duration;
-			
-			return *this;
 		}
 		
 		
@@ -243,7 +279,7 @@ namespace BTHJAC013{
 		}
 		
 		//Pipe operator. Implements concatination
-		Audio &operator|(const Audio * rhs){
+		Audio &operator|(const Audio & rhs){
 			audioData.insert(audioData.end(), rhs.audioData.begin(), rhs.audioData.end());
 			return *this;
 		}
@@ -297,7 +333,7 @@ namespace BTHJAC013{
 				infile.seekg (0, infile.beg);
 				
 				//Calculate the numbers of samples that will be found in the file
-				int numberOfSamples = (int) (fileLength / (tSize * numChannels));
+				int numberOfSamples = (int) (fileLength / (tSize * 2));
 				
 				//calculate duration of the file
 				duration = numberOfSamples/(float)sampleRate;
@@ -380,13 +416,13 @@ namespace BTHJAC013{
 				accum = std::make_pair(accum.first + (std::pow(x.first, 2)), accum.second + (std::pow(x.second, 2)));
 				return accum;
 			});		//Had someone explain this to me....I still dont full comprehend how this actually works.
-			rms = std::make_pair(std::sqrt(rms.first * inverseSize), std::sqrt(rms.second * inverseSize));
+			rms = std::make_pair(std::sqrt(rms.first * audioDataSizeInverse), std::sqrt(rms.second * audioDataSizeInverse));
 			return rms;		
 		}
 		
 		//normalizes audio data to given rms value
 		Audio & normalize(float leftRMS, float rightRMS){
-			NormalFunction normalF (calcRMS(), std::make_pair(leftRMS, rightRMS);
+			NormalFunction normalF (calcRMS(), std::make_pair(leftRMS, rightRMS));
 			Audio<T,2> * tempAudio = new Audio(*this);
 			std::transform(audioData.begin(), audioData.end(), tempAudio->audioData.begin(), normalF);
 			return * tempAudio;
@@ -401,7 +437,7 @@ namespace BTHJAC013{
 			NormalFunction(std::pair<float, float> curRMS, std::pair<float, float> tarRMS):currentRMS(curRMS), targetRMS(tarRMS){}
 			
 			std::pair<T, T> operator()(std::pair<float, float> inputAmpl){
-				return std::make_pair((T) (inputAmp.first * (desiredRms.first / currentRms.first)), (T) (inputAmp.second * (desiredRms.second / currentRms.second)));
+				return std::make_pair((T) (inputAmpl.first * (targetRMS.first / currentRMS.first)), (T) (inputAmpl.second * (targetRMS.second / currentRMS.second)));
 			}
 		};
 		
