@@ -60,7 +60,7 @@ namespace BTHJAC013{
 		Audio &operator=(const Audio<T,1> & rhs){
 			Audio<T,1>temp(rhs);			//Saw this on an online thread. Quite a nice shorthand...
 			*this = std::move(rhs);			//but I'm wondering waht effect ths will have on efficiency....
-			return *this;				//dont have time to worry bout that right now...but would be interesting to see.
+			return *this;				//dont have time to worry bout that right now...but would be interesting to see. (Calls move assignment)
 		}
 		
 		//Move Assignment Operator
