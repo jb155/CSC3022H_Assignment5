@@ -4,7 +4,7 @@ Jacques Botha - BTHJAC013
 
 Instructions:
 - Arguments and program invocation:
-	samp -r sampleRateInHz -b bitCount -c noChannels [-o outFileName ] ["<ops>"] soundFile1 [soundFile2]
+	samp -r sampleRateInHz -b bitCount -c noChannels [-o outFileName ] [ops] soundFile1 [soundFile2]
 
 - Input Format
 	Description
@@ -16,7 +16,7 @@ Instructions:
 	(mono) or 2 (stereo).
 	+ “outFileName” is the name of the newly created sound clip (should default
 	to “out”).
-	+ "<ops>" is ONE of the following:
+	+ ops is ONE of the following:
 		* add: add soundFile1 and soundFile2
 		* cut r1 r2: remove samples over range [r1,r2] (inclusive) (assumes
 	one sound file)
