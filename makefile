@@ -1,3 +1,6 @@
+.SUFFIXES:
+.SUFFIXES: .cpp .o
+
 CC=g++
 FLAGS=-std=c++11
 SOURCES=$(wildcard src/*.cpp)
@@ -16,8 +19,4 @@ clean:
 run: default
 	cd ./build && ./$(EXE_NAME) $(ARGS)
 
-unit_tests.o:
-	$(CC) -c src/unit_tests.cpp -o src/unit_tests.o $(FLAGS)
 
-run-tests: unit_tests.o
-	$(CC) src/unit_tests.o -o build/unit_tests $(FLAGS) && ./build/unit_tests
